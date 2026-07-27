@@ -8727,6 +8727,29 @@ enum Species GetBattlerVisualSpecies(enum BattlerId battler)
     return gBattleMons[battler].species;
 }
 
+// Pokepals multi-ability system, Phase 2.
+// Triggers each of a battler's fixed innate abilities' switch-in effects by
+// reusing AbilityBattleEffects' existing explicit-ability override parameter.
+// This deliberately does NOT touch AbilityBattleEffects itself - innates ride
+// on top of the normal single-ability flow rather than replacing it, so every
+// other ability call site in the engine is unaffected until we choose to wire
+// it up the same way.
+bool32 TryInnateAbilitiesOnSwitchIn(enum BattlerId battler)
+{
+    enum Species species = gBattleMons[battler].species;
+    bool32 effect = FALSE;
+    u32 i;
+
+    for (i = 0; i < NUM_INNATE_SLOTS; i++)
+    {
+        enum Ability innate = gSpeciesInfo[species].innates[i];
+        if (innate != ABILITY_NONE
+         && AbilityBattleEffects(ABILITYEFFECT_ON_SWITCHIN, battler, innate, MOVE_NONE, TRUE))
+            effect = TRUE;
+    }
+    return effect;
+}
+
 bool32 TryClearIllusion(enum BattlerId battler, enum Ability ability)
 {
     if (gBattleStruct->illusion[battler].state != ILLUSION_ON)

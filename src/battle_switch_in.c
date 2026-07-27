@@ -277,6 +277,11 @@ static bool32 FirstEventBlockEvents(struct BattleCalcValues *calcValues)
          || AbilityBattleEffects(ABILITYEFFECT_ON_SWITCHIN, battler, calcValues->abilities[battler], MOVE_NONE, gBattleStruct->battlerState[battler].switchIn)
          || TryClearIllusion(battler, calcValues->abilities[battler]))
             effect = TRUE;
+        // Pokepals: fixed innate abilities also trigger their switch-in effects,
+        // independent of (and in addition to) the mon's main switchable ability.
+        // Phase 2 proof of concept — see TryInnateAbilitiesOnSwitchIn.
+        if (TryInnateAbilitiesOnSwitchIn(battler))
+            effect = TRUE;
         gBattleStruct->eventState.battlerSwitchIn++;
         break;
     case FIRST_EVENT_BLOCK_IMMUNITY_ABILITIES:
