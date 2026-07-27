@@ -1,5 +1,6 @@
 #ifndef GUARD_CONSTANTS_POKEMON_H
 #define GUARD_CONSTANTS_POKEMON_H
+#define NUM_INNATE_SLOTS 3
 
 // Pokémon types
 enum __attribute__((packed)) Type
@@ -401,6 +402,12 @@ enum ShinyMode {
 #define NUM_ABILITY_SLOTS (NUM_NORMAL_ABILITY_SLOTS + NUM_HIDDEN_ABILITY_SLOTS)
 #define NUM_NORMAL_ABILITY_SLOTS 2
 #define NUM_HIDDEN_ABILITY_SLOTS 1
+
+// Pokepals multi-ability system (ported concept from Elite Redux).
+// Innates are fixed, always-active passive abilities layered on top of the
+// normal switchable ability slots above. Phase 1: data layer only — battle
+// engine does not yet check these.
+#define NUM_INNATE_SLOTS 3
 
 // Used as a signal for givemon to generate a default ability by personality.
 #define NUM_ABILITY_PERSONALITY 0xFF

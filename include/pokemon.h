@@ -416,6 +416,7 @@ struct SpeciesInfo /*0xC4*/
     u8 growthRate;
     u8 eggGroups[2];
     enum Ability abilities[NUM_ABILITY_SLOTS]; // 3 abilities, no longer u8 because we have over 255 abilities now.
+    enum Ability innates[NUM_INNATE_SLOTS]; // Pokepals: fixed passive abilities, always active alongside the switchable ability above. See NUM_INNATE_SLOTS.
     u8 safariZoneFleeRate;
 
     // Pokédex data
