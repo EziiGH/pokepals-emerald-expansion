@@ -8734,7 +8734,14 @@ enum Species GetBattlerVisualSpecies(enum BattlerId battler)
 // on top of the normal single-ability flow rather than replacing it, so every
 // other ability call site in the engine is unaffected until we choose to wire
 // it up the same way.
-bool32 TryInnateAbilitiesOnSwitchIn(enum BattlerId battler)
+// Pokepals multi-ability system, Phase 2.
+// Shared helper: runs AbilityBattleEffects for each of a battler's non-empty
+// innate slots under a given trigger case, reusing AbilityBattleEffects'
+// existing explicit-ability override parameter. This deliberately does NOT
+// touch AbilityBattleEffects itself - innates ride on top of the normal
+// single-ability flow rather than replacing it, so every other ability call
+// site in the engine is unaffected until we choose to wire it up the same way.
+static bool32 TryInnateAbilitiesForCase(enum AbilityEffect caseID, enum BattlerId battler)
 {
     enum Species species = gBattleMons[battler].species;
     bool32 effect = FALSE;
@@ -8743,11 +8750,45 @@ bool32 TryInnateAbilitiesOnSwitchIn(enum BattlerId battler)
     for (i = 0; i < NUM_INNATE_SLOTS; i++)
     {
         enum Ability innate = gSpeciesInfo[species].innates[i];
-        if (innate != ABILITY_NONE
-         && AbilityBattleEffects(ABILITYEFFECT_ON_SWITCHIN, battler, innate, MOVE_NONE, TRUE))
-            effect = TRUE;
+        if (innate != ABILITY_NONE)
+        {
+            // Pokepals multi-ability system: without this, the ability popup
+            // re-fetches the battler's real switchable ability for display,
+            // showing the wrong name when an innate is what actually triggered.
+            // This is the same override mechanism the engine already uses
+            // elsewhere (e.g. Chilling Neigh/Grim Neigh) for this exact problem.
+            gBattleScripting.abilityPopupOverwrite = innate;
+            if (AbilityBattleEffects(caseID, battler, innate, MOVE_NONE, TRUE))
+            {
+                effect = TRUE;
+                // BattleScriptCall doesn't run a script immediately - it just
+                // points the interpreter at it and returns. If we kept looping
+                // and a second innate also triggered here, its BattleScriptCall
+                // would overwrite the pointer (and our override value) before
+                // the first one's script ever ran. So we stop at the first hit
+                // and let it run to completion; the next trigger event (next
+                // switch-in, next end of turn, etc.) will check the remaining
+                // innate slots again.
+                break;
+            }
+        }
     }
     return effect;
+}
+
+bool32 TryInnateAbilitiesOnSwitchIn(enum BattlerId battler)
+{
+    return TryInnateAbilitiesForCase(ABILITYEFFECT_ON_SWITCHIN, battler);
+}
+
+bool32 TryInnateAbilitiesEndTurn(enum BattlerId battler)
+{
+    return TryInnateAbilitiesForCase(ABILITYEFFECT_ENDTURN, battler);
+}
+
+bool32 TryInnateAbilitiesImmunity(enum BattlerId battler)
+{
+    return TryInnateAbilitiesForCase(ABILITYEFFECT_IMMUNITY, battler);
 }
 
 bool32 TryClearIllusion(enum BattlerId battler, enum Ability ability)

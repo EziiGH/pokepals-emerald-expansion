@@ -268,6 +268,8 @@ bool32 CanBattlerGetOrLoseItem(enum BattlerId fromBattler, enum BattlerId battle
 enum Species GetBattlerVisualSpecies(enum BattlerId battler);
 bool32 TryClearIllusion(enum BattlerId battler, enum Ability ability);
 bool32 TryInnateAbilitiesOnSwitchIn(enum BattlerId battler); // Pokepals multi-ability system, Phase 2
+bool32 TryInnateAbilitiesEndTurn(enum BattlerId battler); // Pokepals multi-ability system, Phase 2
+bool32 TryInnateAbilitiesImmunity(enum BattlerId battler); // Pokepals multi-ability system, Phase 2
 enum Species GetIllusionMonSpecies(enum BattlerId battler);
 struct Pokemon *GetIllusionMonPtr(enum BattlerId battler);
 void ClearIllusionMon(enum BattlerId battler);

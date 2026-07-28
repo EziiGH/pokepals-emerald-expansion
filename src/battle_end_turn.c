@@ -1325,28 +1325,32 @@ static bool32 HandleEndTurnThirdEventBlock(enum BattlerId battler)
         gBattleStruct->eventState.endTurnBlock++;
         break;
     case THIRD_EVENT_BLOCK_ABILITIES:
-    {
-        enum Ability ability = GetBattlerAbility(battler);
-        switch (ability)
         {
-        case ABILITY_TRUANT: // Not fully accurate but it has to be handled somehow. TODO: Implement the correct gen5+ behavior
-        case ABILITY_CUD_CHEW:
-        case ABILITY_SLOW_START:
-        case ABILITY_BAD_DREAMS:
-        case ABILITY_BALL_FETCH:
-        case ABILITY_HARVEST:
-        case ABILITY_MOODY:
-        case ABILITY_PICKUP:
-        case ABILITY_SPEED_BOOST:
-            if (AbilityBattleEffects(ABILITYEFFECT_ENDTURN, battler, ability, MOVE_NONE, TRUE))
+            enum Ability ability = GetBattlerAbility(battler);
+            switch (ability)
+            {
+            case ABILITY_TRUANT: // Not fully accurate but it has to be handled somehow. TODO: Implement the correct gen5+ behavior
+            case ABILITY_CUD_CHEW:
+            case ABILITY_SLOW_START:
+            case ABILITY_BAD_DREAMS:
+            case ABILITY_BALL_FETCH:
+            case ABILITY_HARVEST:
+            case ABILITY_MOODY:
+            case ABILITY_PICKUP:
+            case ABILITY_SPEED_BOOST:
+                if (AbilityBattleEffects(ABILITYEFFECT_ENDTURN, battler, ability, MOVE_NONE, TRUE))
+                    effect = TRUE;
+                break;
+            default:
+                break;
+            }
+            // Pokepals multi-ability system, Phase 2 extension: fixed innate abilities
+            // also get their end-of-turn effects, independent of the main ability above.
+            if (TryInnateAbilitiesEndTurn(battler))
                 effect = TRUE;
-            break;
-        default:
+            gBattleStruct->eventState.endTurnBlock++;
             break;
         }
-        gBattleStruct->eventState.endTurnBlock++;
-        break;
-    }
     case THIRD_EVENT_BLOCK_ITEMS:
         if (ItemBattleEffects(battler, 0, GetBattlerHoldEffect(battler), IsOrbsWhiteHerbActivation))
             effect = TRUE;

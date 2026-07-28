@@ -683,7 +683,7 @@ static const struct WindowTemplate sPageAbilitiesTemplate[] =
         .width = 18,
         .height = 4,
         .paletteNum = 6,
-        .baseBlock = 844, // Title window above ends at 822+22=844
+        .baseBlock = 467,
     },
     [PSS_DATA_WINDOW_ABILITIES_INNATE1] = {
         .bg = 0,
@@ -692,7 +692,7 @@ static const struct WindowTemplate sPageAbilitiesTemplate[] =
         .width = 18,
         .height = 4,
         .paletteNum = 6,
-        .baseBlock = 916, // 844 + (18*4) = 916
+        .baseBlock = 539, // 467 + (18*4) = 539
     },
     [PSS_DATA_WINDOW_ABILITIES_INNATE2] = {
         .bg = 0,
@@ -701,7 +701,7 @@ static const struct WindowTemplate sPageAbilitiesTemplate[] =
         .width = 18,
         .height = 4,
         .paletteNum = 6,
-        .baseBlock = 988, // 916 + 72
+        .baseBlock = 611, // 539 + 72
     },
     [PSS_DATA_WINDOW_ABILITIES_INNATE3] = {
         .bg = 0,
@@ -710,9 +710,10 @@ static const struct WindowTemplate sPageAbilitiesTemplate[] =
         .width = 18,
         .height = 4,
         .paletteNum = 6,
-        .baseBlock = 1060, // 988 + 72
+        .baseBlock = 683, // 611 + 72, ends at 755 - safely under the 1023 hardware limit
     },
 };
+
 static const struct WindowTemplate sPageSkillsTemplate[] =
 {
     [PSS_DATA_WINDOW_SKILLS_HELD_ITEM] = {
@@ -1533,10 +1534,16 @@ static bool8 DecompressGraphics(void)
         sMonSummaryScreen->switchCounter++;
         break;
     case 6:
-        // Pokepals multi-ability system: placeholder background, reusing Skills'
-        // graphic since no dedicated Abilities-page art exists yet. Swap this
-        // for a real gSummaryPage_Abilities_Tilemap asset once one is made.
-        DecompressDataWithHeaderWram(gSummaryPage_Skills_Tilemap, sMonSummaryScreen->bgTilemapBuffers[PSS_PAGE_ABILITIES][1]);
+        // Pokepals multi-ability system: plain blank background (tile 0 is the
+        // blank/transparent tile in the shared gSummaryScreen_Gfx tileset used by
+        // every page). This avoids borrowing another page's art and its baked-in
+        // labels entirely. Swap for a real gSummaryPage_Abilities_Tilemap asset
+        // once dedicated art exists. Populated into BOTH buffer slots since the
+        // page-scroll transition code reads slot [0], and our own explicit
+        // SetBgTilemapBuffer call (in PrintAbilitiesPageText/Task_PrintAbilitiesPage)
+        // also reads slot [0].
+        CpuFill16(0, sMonSummaryScreen->bgTilemapBuffers[PSS_PAGE_ABILITIES][0], 0x400 * 2);
+        CpuFill16(0, sMonSummaryScreen->bgTilemapBuffers[PSS_PAGE_ABILITIES][1], 0x400 * 2);
         sMonSummaryScreen->switchCounter++;
         break;
     case 7:
@@ -3499,6 +3506,7 @@ static void ClearPageWindowTilemaps(u8 page)
         ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_RELEARN);
         break;
     case PSS_PAGE_ABILITIES: // Pokepals multi-ability system - no extra prompt/relearn windows used on this page
+        ShowBg(3); // restore Background 3 (Info), which we explicitly hid while this page was active
         break;
     }
 
@@ -3665,6 +3673,18 @@ static void PrintAbilitiesPageText(void)
     enum Species species = sMonSummaryScreen->summary.species;
     enum Ability mainAbility = GetAbilityBySpecies(species, sMonSummaryScreen->summary.abilityNum);
 
+    // Pokepals multi-ability system: the generic scroll mechanism (PssScrollRight/Left)
+    // does not repoint any hardware background layer to this page's buffer, so we force
+    // it explicitly here rather than relying on that shared path. Layer 1 is reused
+    // (it's already one of the two layers the scroll system swaps between).
+    SetBgTilemapBuffer(1, sMonSummaryScreen->bgTilemapBuffers[PSS_PAGE_ABILITIES][0]);
+    SetBgAttribute(1, BG_ATTR_PRIORITY, 1);
+    ScheduleBgCopyTilemapToVram(1);
+    ShowBg(1);
+    // Pokepals multi-ability system: Background 3 (Info page) is otherwise still
+    // visible underneath our blank/transparent tiles on layer 1, since it's never
+    // repointed away from Info for this page. Explicitly hide it while here.
+    HideBg(3);
     PrintAbilitiesPageBlock(PSS_DATA_WINDOW_ABILITIES_MAIN, sText_AbilitiesPage_MainLabel, mainAbility);
     PrintAbilitiesPageBlock(PSS_DATA_WINDOW_ABILITIES_INNATE1, sText_AbilitiesPage_InnateLabel, gSpeciesInfo[species].innates[0]);
     PrintAbilitiesPageBlock(PSS_DATA_WINDOW_ABILITIES_INNATE2, sText_AbilitiesPage_InnateLabel, gSpeciesInfo[species].innates[1]);
@@ -3679,6 +3699,11 @@ static void Task_PrintAbilitiesPage(u8 taskId)
     switch (data[0])
     {
     case 1:
+        SetBgTilemapBuffer(1, sMonSummaryScreen->bgTilemapBuffers[PSS_PAGE_ABILITIES][0]);
+        SetBgAttribute(1, BG_ATTR_PRIORITY, 1);
+        ScheduleBgCopyTilemapToVram(1);
+        ShowBg(1);
+        HideBg(3); // Pokepals multi-ability system: see comment in PrintAbilitiesPageText
         PrintAbilitiesPageBlock(PSS_DATA_WINDOW_ABILITIES_MAIN, sText_AbilitiesPage_MainLabel,
             GetAbilityBySpecies(species, sMonSummaryScreen->summary.abilityNum));
         break;
