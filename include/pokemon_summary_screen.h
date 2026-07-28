@@ -40,6 +40,7 @@ enum PokemonSummaryScreenPage
     PSS_PAGE_SKILLS,
     PSS_PAGE_BATTLE_MOVES,
     PSS_PAGE_CONTEST_MOVES,
+    PSS_PAGE_ABILITIES, // Pokepals multi-ability system: dedicated page for Ability + up to 3 Innates
     PSS_PAGE_COUNT,
 };
 
